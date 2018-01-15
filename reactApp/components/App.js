@@ -29,7 +29,7 @@ let App = ({
     return (
         <div style = {bigContainer}>
          <div style = {hf}>
-             <h3>MI DAY PLANNER / TU DAY PLANNER</h3>
+             <h3>YOUR PLANNER</h3>
          </div>
 
          <div>

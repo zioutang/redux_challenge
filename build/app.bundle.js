@@ -9922,54 +9922,57 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.assertNodeList = assertNodeList;
 exports.setElement = setElement;
-exports.tryForceFallback = tryForceFallback;
 exports.validateElement = validateElement;
 exports.hide = hide;
 exports.show = show;
 exports.documentNotReadyOrSSRTesting = documentNotReadyOrSSRTesting;
 exports.resetForTesting = resetForTesting;
+
+var _warning = __webpack_require__(239);
+
+var _warning2 = _interopRequireDefault(_warning);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
 var globalElement = null;
 
 function assertNodeList(nodeList, selector) {
   if (!nodeList || !nodeList.length) {
-    throw new Error('react-modal: No elements were found for selector ' + selector + '.');
+    throw new Error("react-modal: No elements were found for selector " + selector + ".");
   }
 }
 
 function setElement(element) {
   var useElement = element;
-  if (typeof useElement === 'string') {
+  if (typeof useElement === "string") {
     var el = document.querySelectorAll(useElement);
     assertNodeList(el, useElement);
-    useElement = 'length' in el ? el[0] : el;
+    useElement = "length" in el ? el[0] : el;
   }
   globalElement = useElement || globalElement;
   return globalElement;
 }
 
-function tryForceFallback() {
-  if (document && document.body) {
-    // force fallback to document.body
-    setElement(document.body);
-    return true;
-  }
-  return false;
-}
-
 function validateElement(appElement) {
-  if (!appElement && !globalElement && !tryForceFallback()) {
-    throw new Error(['react-modal: Cannot fallback to `document.body`, because it\'s not ready or available.', 'If you are doing server-side rendering, use this function to defined an element.', '`Modal.setAppElement(el)` to make this accessible']);
+  if (!appElement && !globalElement) {
+    (0, _warning2.default)(false, ["react-modal: App element is not defined.", "Please use `Modal.setAppElement(el)` or set `appElement={el}`.", "This is needed so screen readers don't see main content", "when modal is opened. It is not recommended, but you can opt-out", "by setting `ariaHideApp={false}`."].join(" "));
+
+    return false;
   }
+
+  return true;
 }
 
 function hide(appElement) {
-  validateElement(appElement);
-  (appElement || globalElement).setAttribute('aria-hidden', 'true');
+  if (validateElement(appElement)) {
+    (appElement || globalElement).setAttribute("aria-hidden", "true");
+  }
 }
 
 function show(appElement) {
-  validateElement(appElement);
-  (appElement || globalElement).removeAttribute('aria-hidden');
+  if (validateElement(appElement)) {
+    (appElement || globalElement).removeAttribute("aria-hidden");
+  }
 }
 
 function documentNotReadyOrSSRTesting() {
@@ -9977,7 +9980,7 @@ function documentNotReadyOrSSRTesting() {
 }
 
 function resetForTesting() {
-  globalElement = document.body;
+  globalElement = null;
 }
 
 /***/ }),
@@ -10032,6 +10035,7 @@ function totalCount() {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+exports.canUseDOM = undefined;
 
 var _exenv = __webpack_require__(108);
 
@@ -10043,8 +10047,9 @@ var EE = _exenv2.default;
 
 var SafeHTMLElement = EE.canUseDOM ? window.HTMLElement : {};
 
+var canUseDOM = exports.canUseDOM = EE.canUseDOM;
+
 exports.default = SafeHTMLElement;
-module.exports = exports['default'];
 
 /***/ }),
 /* 88 */
@@ -10071,15 +10076,22 @@ exports.default = findTabbableDescendants;
 
 var tabbableNode = /input|select|textarea|button|object/;
 
-function hidden(el) {
-  return el.offsetWidth <= 0 && el.offsetHeight <= 0 || el.style.display === 'none';
+function hidesContents(element) {
+  var zeroSize = element.offsetWidth <= 0 && element.offsetHeight <= 0;
+
+  // If the node is empty, this is good enough
+  if (zeroSize && !element.innerHTML) return true;
+
+  // Otherwise we need to check some styles
+  var style = window.getComputedStyle(element);
+  return zeroSize ? style.getPropertyValue("overflow") !== "visible" : style.getPropertyValue("display") == "none";
 }
 
 function visible(element) {
   var parentElement = element;
   while (parentElement) {
     if (parentElement === document.body) break;
-    if (hidden(parentElement)) return false;
+    if (hidesContents(parentElement)) return false;
     parentElement = parentElement.parentNode;
   }
   return true;
@@ -10092,16 +10104,16 @@ function focusable(element, isTabIndexNotNaN) {
 }
 
 function tabbable(element) {
-  var tabIndex = element.getAttribute('tabindex');
+  var tabIndex = element.getAttribute("tabindex");
   if (tabIndex === null) tabIndex = undefined;
   var isTabIndexNaN = isNaN(tabIndex);
   return (isTabIndexNaN || tabIndex >= 0) && focusable(element, !isTabIndexNaN);
 }
 
 function findTabbableDescendants(element) {
-  return [].slice.call(element.querySelectorAll('*'), 0).filter(tabbable);
+  return [].slice.call(element.querySelectorAll("*"), 0).filter(tabbable);
 }
-module.exports = exports['default'];
+module.exports = exports["default"];
 
 /***/ }),
 /* 89 */
@@ -11497,7 +11509,7 @@ var App = function App(_ref) {
       _react2.default.createElement(
         'h3',
         null,
-        'MI DAY PLANNER / TU DAY PLANNER'
+        'YOUR PLANNER'
       )
     ),
     _react2.default.createElement(
@@ -23451,7 +23463,7 @@ module.exports = ReactMount.renderSubtreeIntoContainer;
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
-/* WEBPACK VAR INJECTION */(function(process) {
+
 
 Object.defineProperty(exports, "__esModule", {
   value: true
@@ -23496,10 +23508,11 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-var portalClassName = exports.portalClassName = 'ReactModalPortal';
-var bodyOpenClassName = exports.bodyOpenClassName = 'ReactModal__Body--open';
+var portalClassName = exports.portalClassName = "ReactModalPortal";
+var bodyOpenClassName = exports.bodyOpenClassName = "ReactModal__Body--open";
 
-var renderSubtreeIntoContainer = _reactDom2.default.unstable_renderSubtreeIntoContainer;
+var isReact16 = _reactDom2.default.createPortal !== undefined;
+var createPortal = isReact16 ? _reactDom2.default.createPortal : _reactDom2.default.unstable_renderSubtreeIntoContainer;
 
 function getParentElement(parentSelector) {
   return parentSelector();
@@ -23520,28 +23533,36 @@ var Modal = function (_Component) {
     }
 
     return _ret = (_temp = (_this = _possibleConstructorReturn(this, (_ref = Modal.__proto__ || Object.getPrototypeOf(Modal)).call.apply(_ref, [this].concat(args))), _this), _this.removePortal = function () {
-      _reactDom2.default.unmountComponentAtNode(_this.node);
+      !isReact16 && _reactDom2.default.unmountComponentAtNode(_this.node);
       var parent = getParentElement(_this.props.parentSelector);
       parent.removeChild(_this.node);
+    }, _this.portalRef = function (ref) {
+      _this.portal = ref;
     }, _this.renderPortal = function (props) {
-      _this.portal = renderSubtreeIntoContainer(_this, _react2.default.createElement(_ModalPortal2.default, _extends({ defaultStyles: Modal.defaultStyles }, props)), _this.node);
+      var portal = createPortal(_this, _react2.default.createElement(_ModalPortal2.default, _extends({ defaultStyles: Modal.defaultStyles }, props)), _this.node);
+      _this.portalRef(portal);
     }, _temp), _possibleConstructorReturn(_this, _ret);
   }
 
   _createClass(Modal, [{
-    key: 'componentDidMount',
+    key: "componentDidMount",
     value: function componentDidMount() {
-      this.node = document.createElement('div');
+      if (!_safeHTMLElement.canUseDOM) return;
+
+      if (!isReact16) {
+        this.node = document.createElement("div");
+      }
       this.node.className = this.props.portalClassName;
 
       var parent = getParentElement(this.props.parentSelector);
       parent.appendChild(this.node);
 
-      this.renderPortal(this.props);
+      !isReact16 && this.renderPortal(this.props);
     }
   }, {
-    key: 'componentWillReceiveProps',
+    key: "componentWillReceiveProps",
     value: function componentWillReceiveProps(newProps) {
+      if (!_safeHTMLElement.canUseDOM) return;
       var isOpen = newProps.isOpen;
       // Stop unnecessary renders if modal is remaining closed
 
@@ -23555,19 +23576,20 @@ var Modal = function (_Component) {
         newParent.appendChild(this.node);
       }
 
-      this.renderPortal(newProps);
+      !isReact16 && this.renderPortal(newProps);
     }
   }, {
-    key: 'componentWillUpdate',
+    key: "componentWillUpdate",
     value: function componentWillUpdate(newProps) {
+      if (!_safeHTMLElement.canUseDOM) return;
       if (newProps.portalClassName !== this.props.portalClassName) {
         this.node.className = newProps.portalClassName;
       }
     }
   }, {
-    key: 'componentWillUnmount',
+    key: "componentWillUnmount",
     value: function componentWillUnmount() {
-      if (!this.node || !this.portal) return;
+      if (!_safeHTMLElement.canUseDOM || !this.node || !this.portal) return;
 
       var state = this.portal.state;
       var now = Date.now();
@@ -23584,24 +23606,26 @@ var Modal = function (_Component) {
       }
     }
   }, {
-    key: 'render',
+    key: "render",
     value: function render() {
-      return null;
+      if (!_safeHTMLElement.canUseDOM || !isReact16) {
+        return null;
+      }
+
+      if (!this.node && isReact16) {
+        this.node = document.createElement("div");
+      }
+
+      return createPortal(_react2.default.createElement(_ModalPortal2.default, _extends({
+        ref: this.portalRef,
+        defaultStyles: Modal.defaultStyles
+      }, this.props)), this.node);
     }
   }], [{
-    key: 'setAppElement',
+    key: "setAppElement",
     value: function setAppElement(element) {
       ariaAppHider.setElement(element);
     }
-
-    /* eslint-disable no-console */
-
-  }, {
-    key: 'injectCSS',
-    value: function injectCSS() {
-      process.env.NODE_ENV !== "production" && console.warn('React-Modal: injectCSS has been deprecated ' + 'and no longer has any effect. It will be removed in a later version');
-    }
-    /* eslint-enable no-console */
 
     /* eslint-disable react/no-unused-prop-types */
 
@@ -23620,19 +23644,29 @@ Modal.propTypes = {
   }),
   portalClassName: _propTypes2.default.string,
   bodyOpenClassName: _propTypes2.default.string,
-  className: _propTypes2.default.oneOfType([_propTypes2.default.string, _propTypes2.default.object]),
-  overlayClassName: _propTypes2.default.oneOfType([_propTypes2.default.string, _propTypes2.default.object]),
+  className: _propTypes2.default.oneOfType([_propTypes2.default.string, _propTypes2.default.shape({
+    base: _propTypes2.default.string.isRequired,
+    afterOpen: _propTypes2.default.string.isRequired,
+    beforeClose: _propTypes2.default.string.isRequired
+  })]),
+  overlayClassName: _propTypes2.default.oneOfType([_propTypes2.default.string, _propTypes2.default.shape({
+    base: _propTypes2.default.string.isRequired,
+    afterOpen: _propTypes2.default.string.isRequired,
+    beforeClose: _propTypes2.default.string.isRequired
+  })]),
   appElement: _propTypes2.default.instanceOf(_safeHTMLElement2.default),
   onAfterOpen: _propTypes2.default.func,
   onRequestClose: _propTypes2.default.func,
   closeTimeoutMS: _propTypes2.default.number,
   ariaHideApp: _propTypes2.default.bool,
-  shouldFocusAfter: _propTypes2.default.bool,
+  shouldFocusAfterRender: _propTypes2.default.bool,
   shouldCloseOnOverlayClick: _propTypes2.default.bool,
+  shouldReturnFocusAfterClose: _propTypes2.default.bool,
   parentSelector: _propTypes2.default.func,
   aria: _propTypes2.default.object,
   role: _propTypes2.default.string,
-  contentLabel: _propTypes2.default.string
+  contentLabel: _propTypes2.default.string,
+  shouldCloseOnEsc: _propTypes2.default.bool
 };
 Modal.defaultProps = {
   isOpen: false,
@@ -23641,37 +23675,38 @@ Modal.defaultProps = {
   ariaHideApp: true,
   closeTimeoutMS: 0,
   shouldFocusAfterRender: true,
+  shouldCloseOnEsc: true,
   shouldCloseOnOverlayClick: true,
+  shouldReturnFocusAfterClose: true,
   parentSelector: function parentSelector() {
     return document.body;
   }
 };
 Modal.defaultStyles = {
   overlay: {
-    position: 'fixed',
+    position: "fixed",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(255, 255, 255, 0.75)'
+    backgroundColor: "rgba(255, 255, 255, 0.75)"
   },
   content: {
-    position: 'absolute',
-    top: '40px',
-    left: '40px',
-    right: '40px',
-    bottom: '40px',
-    border: '1px solid #ccc',
-    background: '#fff',
-    overflow: 'auto',
-    WebkitOverflowScrolling: 'touch',
-    borderRadius: '4px',
-    outline: 'none',
-    padding: '20px'
+    position: "absolute",
+    top: "40px",
+    left: "40px",
+    right: "40px",
+    bottom: "40px",
+    border: "1px solid #ccc",
+    background: "#fff",
+    overflow: "auto",
+    WebkitOverflowScrolling: "touch",
+    borderRadius: "4px",
+    outline: "none",
+    padding: "20px"
   }
 };
 exports.default = Modal;
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0)))
 
 /***/ }),
 /* 206 */
@@ -23695,6 +23730,8 @@ var _react = __webpack_require__(14);
 var _react2 = _interopRequireDefault(_react);
 
 var _propTypes = __webpack_require__(26);
+
+var _propTypes2 = _interopRequireDefault(_propTypes);
 
 var _focusManager = __webpack_require__(208);
 
@@ -23732,8 +23769,8 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 
 // so that our CSS is statically analyzable
 var CLASS_NAMES = {
-  overlay: 'ReactModal__Overlay',
-  content: 'ReactModal__Content'
+  overlay: "ReactModal__Overlay",
+  content: "ReactModal__Content"
 };
 
 var TAB_KEY = 9;
@@ -23760,8 +23797,27 @@ var ModalPortal = function (_Component) {
     };
 
     _this.afterClose = function () {
-      focusManager.returnFocus();
-      focusManager.teardownScopedFocus();
+      var _this$props = _this.props,
+          appElement = _this$props.appElement,
+          ariaHideApp = _this$props.ariaHideApp;
+
+      // Remove body class
+
+      bodyClassList.remove(_this.props.bodyOpenClassName);
+
+      // Reset aria-hidden attribute if all modals have been removed
+      if (ariaHideApp && refCount.totalCount() < 1) {
+        ariaAppHider.show(appElement);
+      }
+
+      if (_this.props.shouldFocusAfterRender) {
+        if (_this.props.shouldReturnFocusAfterClose) {
+          focusManager.returnFocus();
+          focusManager.teardownScopedFocus();
+        } else {
+          focusManager.popWithoutFocus();
+        }
+      }
     };
 
     _this.open = function () {
@@ -23770,8 +23826,11 @@ var ModalPortal = function (_Component) {
         clearTimeout(_this.closeTimer);
         _this.setState({ beforeClose: false });
       } else {
-        focusManager.setupScopedFocus(_this.node);
-        focusManager.markForFocusLater();
+        if (_this.props.shouldFocusAfterRender) {
+          focusManager.setupScopedFocus(_this.node);
+          focusManager.markForFocusLater();
+        }
+
         _this.setState({ isOpen: true }, function () {
           _this.setState({ afterOpen: true });
 
@@ -23783,7 +23842,6 @@ var ModalPortal = function (_Component) {
     };
 
     _this.close = function () {
-      _this.beforeClose();
       if (_this.props.closeTimeoutMS > 0) {
         _this.closeWithTimeout();
       } else {
@@ -23815,8 +23873,9 @@ var ModalPortal = function (_Component) {
       if (event.keyCode === TAB_KEY) {
         (0, _scopeTab2.default)(_this.content, event);
       }
-      if (event.keyCode === ESC_KEY) {
-        event.preventDefault();
+
+      if (_this.props.shouldCloseOnEsc && event.keyCode === ESC_KEY) {
+        event.stopPropagation();
         _this.requestClose(event);
       }
     };
@@ -23847,7 +23906,10 @@ var ModalPortal = function (_Component) {
       _this.shouldClose = false;
     };
 
-    _this.handleOverlayOnMouseDown = function () {
+    _this.handleOverlayOnMouseDown = function (event) {
+      if (!_this.props.shouldCloseOnOverlayClick && event.target == _this.overlay) {
+        event.preventDefault();
+      }
       _this.moveFromContentToOverlay = false;
     };
 
@@ -23877,24 +23939,24 @@ var ModalPortal = function (_Component) {
     };
 
     _this.buildClassName = function (which, additional) {
-      var classNames = (typeof additional === 'undefined' ? 'undefined' : _typeof(additional)) === 'object' ? additional : {
+      var classNames = (typeof additional === "undefined" ? "undefined" : _typeof(additional)) === "object" ? additional : {
         base: CLASS_NAMES[which],
-        afterOpen: CLASS_NAMES[which] + '--after-open',
-        beforeClose: CLASS_NAMES[which] + '--before-close'
+        afterOpen: CLASS_NAMES[which] + "--after-open",
+        beforeClose: CLASS_NAMES[which] + "--before-close"
       };
       var className = classNames.base;
       if (_this.state.afterOpen) {
-        className = className + ' ' + classNames.afterOpen;
+        className = className + " " + classNames.afterOpen;
       }
       if (_this.state.beforeClose) {
-        className = className + ' ' + classNames.beforeClose;
+        className = className + " " + classNames.beforeClose;
       }
-      return typeof additional === 'string' && additional ? className + ' ' + additional : className;
+      return typeof additional === "string" && additional ? className + " " + additional : className;
     };
 
     _this.ariaAttributes = function (items) {
       return Object.keys(items).reduce(function (acc, name) {
-        acc['aria-' + name] = items[name];
+        acc["aria-" + name] = items[name];
         return acc;
       }, {});
     };
@@ -23910,7 +23972,7 @@ var ModalPortal = function (_Component) {
   }
 
   _createClass(ModalPortal, [{
-    key: 'componentDidMount',
+    key: "componentDidMount",
     value: function componentDidMount() {
       // Focus needs to be set when mounting and already open
       if (this.props.isOpen) {
@@ -23919,12 +23981,12 @@ var ModalPortal = function (_Component) {
       }
     }
   }, {
-    key: 'componentWillReceiveProps',
+    key: "componentWillReceiveProps",
     value: function componentWillReceiveProps(newProps) {
       if (process.env.NODE_ENV !== "production") {
         if (newProps.bodyOpenClassName !== this.props.bodyOpenClassName) {
           // eslint-disable-next-line no-console
-          console.warn('React-Modal: "bodyOpenClassName" prop has been modified. ' + 'This may cause unexpected behavior when multiple modals are open.');
+          console.warn('React-Modal: "bodyOpenClassName" prop has been modified. ' + "This may cause unexpected behavior when multiple modals are open.");
         }
       }
       // Focus only needs to be set once when the modal is being opened
@@ -23936,7 +23998,7 @@ var ModalPortal = function (_Component) {
       }
     }
   }, {
-    key: 'componentDidUpdate',
+    key: "componentDidUpdate",
     value: function componentDidUpdate() {
       if (this.focusAfterRender) {
         this.focusContent();
@@ -23944,13 +24006,13 @@ var ModalPortal = function (_Component) {
       }
     }
   }, {
-    key: 'componentWillUnmount',
+    key: "componentWillUnmount",
     value: function componentWillUnmount() {
-      this.beforeClose();
+      this.afterClose();
       clearTimeout(this.closeTimer);
     }
   }, {
-    key: 'beforeOpen',
+    key: "beforeOpen",
     value: function beforeOpen() {
       var _props = this.props,
           appElement = _props.appElement,
@@ -23964,57 +24026,44 @@ var ModalPortal = function (_Component) {
         ariaAppHider.hide(appElement);
       }
     }
-  }, {
-    key: 'beforeClose',
-    value: function beforeClose() {
-      var _props2 = this.props,
-          appElement = _props2.appElement,
-          ariaHideApp = _props2.ariaHideApp,
-          bodyOpenClassName = _props2.bodyOpenClassName;
-      // Remove class if no more modals are open
-
-      bodyClassList.remove(bodyOpenClassName);
-      // Reset aria-hidden attribute if all modals have been removed
-      if (ariaHideApp && refCount.totalCount() < 1) {
-        ariaAppHider.show(appElement);
-      }
-    }
 
     // Don't steal focus from inner elements
 
   }, {
-    key: 'render',
+    key: "render",
     value: function render() {
-      var _props3 = this.props,
-          className = _props3.className,
-          overlayClassName = _props3.overlayClassName,
-          defaultStyles = _props3.defaultStyles;
+      var _props2 = this.props,
+          className = _props2.className,
+          overlayClassName = _props2.overlayClassName,
+          defaultStyles = _props2.defaultStyles;
 
       var contentStyles = className ? {} : defaultStyles.content;
       var overlayStyles = overlayClassName ? {} : defaultStyles.overlay;
 
       return this.shouldBeClosed() ? null : _react2.default.createElement(
-        'div',
+        "div",
         {
           ref: this.setOverlayRef,
-          className: this.buildClassName('overlay', overlayClassName),
+          className: this.buildClassName("overlay", overlayClassName),
           style: _extends({}, overlayStyles, this.props.style.overlay),
           onClick: this.handleOverlayOnClick,
           onMouseDown: this.handleOverlayOnMouseDown,
-          onMouseUp: this.handleOverlayOnMouseUp },
+          onMouseUp: this.handleOverlayOnMouseUp,
+          "aria-modal": "true"
+        },
         _react2.default.createElement(
-          'div',
+          "div",
           _extends({
             ref: this.setContentRef,
             style: _extends({}, contentStyles, this.props.style.content),
-            className: this.buildClassName('content', className),
-            tabIndex: '-1',
+            className: this.buildClassName("content", className),
+            tabIndex: "-1",
             onKeyDown: this.handleKeyDown,
             onMouseDown: this.handleContentOnMouseDown,
             onMouseUp: this.handleContentOnMouseUp,
             onClick: this.handleContentOnClick,
             role: this.props.role,
-            'aria-label': this.props.contentLabel
+            "aria-label": this.props.contentLabel
           }, this.ariaAttributes(this.props.aria || {})),
           this.props.children
         )
@@ -24032,32 +24081,34 @@ ModalPortal.defaultProps = {
   }
 };
 ModalPortal.propTypes = {
-  isOpen: _propTypes.PropTypes.bool.isRequired,
-  defaultStyles: _propTypes.PropTypes.shape({
-    content: _propTypes.PropTypes.object,
-    overlay: _propTypes.PropTypes.object
+  isOpen: _propTypes2.default.bool.isRequired,
+  defaultStyles: _propTypes2.default.shape({
+    content: _propTypes2.default.object,
+    overlay: _propTypes2.default.object
   }),
-  style: _propTypes.PropTypes.shape({
-    content: _propTypes.PropTypes.object,
-    overlay: _propTypes.PropTypes.object
+  style: _propTypes2.default.shape({
+    content: _propTypes2.default.object,
+    overlay: _propTypes2.default.object
   }),
-  className: _propTypes.PropTypes.oneOfType([_propTypes.PropTypes.string, _propTypes.PropTypes.object]),
-  overlayClassName: _propTypes.PropTypes.oneOfType([_propTypes.PropTypes.string, _propTypes.PropTypes.object]),
-  bodyOpenClassName: _propTypes.PropTypes.string,
-  ariaHideApp: _propTypes.PropTypes.bool,
-  appElement: _propTypes.PropTypes.instanceOf(_safeHTMLElement2.default),
-  onAfterOpen: _propTypes.PropTypes.func,
-  onRequestClose: _propTypes.PropTypes.func,
-  closeTimeoutMS: _propTypes.PropTypes.number,
-  shouldFocusAfterRender: _propTypes.PropTypes.bool,
-  shouldCloseOnOverlayClick: _propTypes.PropTypes.bool,
-  role: _propTypes.PropTypes.string,
-  contentLabel: _propTypes.PropTypes.string,
-  aria: _propTypes.PropTypes.object,
-  children: _propTypes.PropTypes.node
+  className: _propTypes2.default.oneOfType([_propTypes2.default.string, _propTypes2.default.object]),
+  overlayClassName: _propTypes2.default.oneOfType([_propTypes2.default.string, _propTypes2.default.object]),
+  bodyOpenClassName: _propTypes2.default.string,
+  ariaHideApp: _propTypes2.default.bool,
+  appElement: _propTypes2.default.instanceOf(_safeHTMLElement2.default),
+  onAfterOpen: _propTypes2.default.func,
+  onRequestClose: _propTypes2.default.func,
+  closeTimeoutMS: _propTypes2.default.number,
+  shouldFocusAfterRender: _propTypes2.default.bool,
+  shouldCloseOnOverlayClick: _propTypes2.default.bool,
+  shouldReturnFocusAfterClose: _propTypes2.default.bool,
+  role: _propTypes2.default.string,
+  contentLabel: _propTypes2.default.string,
+  aria: _propTypes2.default.object,
+  children: _propTypes2.default.node,
+  shouldCloseOnEsc: _propTypes2.default.bool
 };
 exports.default = ModalPortal;
-module.exports = exports['default'];
+module.exports = exports["default"];
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0)))
 
 /***/ }),
@@ -24081,7 +24132,7 @@ function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj;
 
 function add(bodyClass) {
   // Increment class(es) on refCount tracker and add class(es) to body
-  bodyClass.split(' ').map(refCount.add).forEach(function (className) {
+  bodyClass.split(" ").map(refCount.add).forEach(function (className) {
     return document.body.classList.add(className);
   });
 }
@@ -24090,7 +24141,7 @@ function remove(bodyClass) {
   var classListMap = refCount.get();
   // Decrement class(es) from the refCount tracker
   // and remove unused class(es) from body
-  bodyClass.split(' ').map(refCount.remove).filter(function (className) {
+  bodyClass.split(" ").map(refCount.remove).filter(function (className) {
     return classListMap[className] === 0;
   }).forEach(function (className) {
     return document.body.classList.remove(className);
@@ -24111,6 +24162,7 @@ exports.handleBlur = handleBlur;
 exports.handleFocus = handleFocus;
 exports.markForFocusLater = markForFocusLater;
 exports.returnFocus = returnFocus;
+exports.popWithoutFocus = popWithoutFocus;
 exports.setupScopedFocus = setupScopedFocus;
 exports.teardownScopedFocus = teardownScopedFocus;
 
@@ -24157,24 +24209,30 @@ function markForFocusLater() {
 function returnFocus() {
   var toFocus = null;
   try {
-    toFocus = focusLaterElements.pop();
-    toFocus.focus();
+    if (focusLaterElements.length !== 0) {
+      toFocus = focusLaterElements.pop();
+      toFocus.focus();
+    }
     return;
   } catch (e) {
-    console.warn(['You tried to return focus to', toFocus, 'but it is not in the DOM anymore'].join(" "));
+    console.warn(["You tried to return focus to", toFocus, "but it is not in the DOM anymore"].join(" "));
   }
 }
 /* eslint-enable no-console */
+
+function popWithoutFocus() {
+  focusLaterElements.length > 0 && focusLaterElements.pop();
+}
 
 function setupScopedFocus(element) {
   modalElement = element;
 
   if (window.addEventListener) {
-    window.addEventListener('blur', handleBlur, false);
-    document.addEventListener('focus', handleFocus, true);
+    window.addEventListener("blur", handleBlur, false);
+    document.addEventListener("focus", handleFocus, true);
   } else {
-    window.attachEvent('onBlur', handleBlur);
-    document.attachEvent('onFocus', handleFocus);
+    window.attachEvent("onBlur", handleBlur);
+    document.attachEvent("onFocus", handleFocus);
   }
 }
 
@@ -24182,11 +24240,11 @@ function teardownScopedFocus() {
   modalElement = null;
 
   if (window.addEventListener) {
-    window.removeEventListener('blur', handleBlur);
-    document.removeEventListener('focus', handleFocus);
+    window.removeEventListener("blur", handleBlur);
+    document.removeEventListener("focus", handleFocus);
   } else {
-    window.detachEvent('onBlur', handleBlur);
-    document.detachEvent('onFocus', handleFocus);
+    window.detachEvent("onBlur", handleBlur);
+    document.detachEvent("onFocus", handleFocus);
   }
 }
 
@@ -24210,20 +24268,66 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 
 function scopeTab(node, event) {
   var tabbable = (0, _tabbable2.default)(node);
+
   if (!tabbable.length) {
+    // Do nothing, since there are no elements that can receive focus.
     event.preventDefault();
     return;
   }
-  var finalTabbable = tabbable[event.shiftKey ? 0 : tabbable.length - 1];
-  var leavingFinalTabbable = finalTabbable === document.activeElement ||
-  // handle immediate shift+tab after opening with mouse
-  node === document.activeElement;
-  if (!leavingFinalTabbable) return;
+
+  var shiftKey = event.shiftKey;
+  var head = tabbable[0];
+  var tail = tabbable[tabbable.length - 1];
+
+  // proceed with default browser behavior
+  if (node === document.activeElement) {
+    return;
+  }
+
+  var target;
+  if (tail === document.activeElement && !shiftKey) {
+    target = head;
+  }
+
+  if (head === document.activeElement && shiftKey) {
+    target = tail;
+  }
+
+  if (target) {
+    event.preventDefault();
+    target.focus();
+    return;
+  }
+
+  // Safari radio issue.
+  //
+  // Safari does not move the focus to the radio button,
+  // so we need to force it to really walk through all elements.
+  //
+  // This is very error prune, since we are trying to guess
+  // if it is a safari browser from the first occurence between
+  // chrome or safari.
+  //
+  // The chrome user agent contains the first ocurrence
+  // as the 'chrome/version' and later the 'safari/version'.
+  var checkSafari = /(\bChrome\b|\bSafari\b)\//.exec(navigator.userAgent);
+  var isSafariDesktop = checkSafari != null && checkSafari[1] != "Chrome" && /\biPod\b|\biPad\b/g.exec(navigator.userAgent) == null;
+
+  // If we are not in safari desktop, let the browser control
+  // the focus
+  if (!isSafariDesktop) return;
+
+  var x = tabbable.indexOf(document.activeElement);
+
+  if (x > -1) {
+    x += shiftKey ? -1 : 1;
+  }
+
   event.preventDefault();
-  var target = tabbable[event.shiftKey ? tabbable.length - 1 : 0];
-  target.focus();
+
+  tabbable[x].focus();
 }
-module.exports = exports['default'];
+module.exports = exports["default"];
 
 /***/ }),
 /* 210 */
@@ -24243,7 +24347,7 @@ var _Modal2 = _interopRequireDefault(_Modal);
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 exports.default = _Modal2.default;
-module.exports = exports['default'];
+module.exports = exports["default"];
 
 /***/ }),
 /* 211 */
@@ -26143,7 +26247,7 @@ if (typeof self !== 'undefined') {
 
 var result = (0, _ponyfill2['default'])(root);
 exports['default'] = result;
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(101), __webpack_require__(239)(module)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(101), __webpack_require__(240)(module)))
 
 /***/ }),
 /* 238 */
@@ -26176,6 +26280,74 @@ function symbolObservablePonyfill(root) {
 
 /***/ }),
 /* 239 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/* WEBPACK VAR INJECTION */(function(process) {/**
+ * Copyright 2014-2015, Facebook, Inc.
+ * All rights reserved.
+ *
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree. An additional grant
+ * of patent rights can be found in the PATENTS file in the same directory.
+ */
+
+
+
+/**
+ * Similar to invariant but only logs a warning if the condition is not met.
+ * This can be used to log issues in development environments in critical
+ * paths. Removing the logging code for production environments will keep the
+ * same logic and follow the same code paths.
+ */
+
+var warning = function() {};
+
+if (process.env.NODE_ENV !== 'production') {
+  warning = function(condition, format, args) {
+    var len = arguments.length;
+    args = new Array(len > 2 ? len - 2 : 0);
+    for (var key = 2; key < len; key++) {
+      args[key - 2] = arguments[key];
+    }
+    if (format === undefined) {
+      throw new Error(
+        '`warning(condition, format, ...args)` requires a warning ' +
+        'message argument'
+      );
+    }
+
+    if (format.length < 10 || (/^[s\W]*$/).test(format)) {
+      throw new Error(
+        'The warning format should be able to uniquely identify this ' +
+        'warning. Please, use a more descriptive format than: ' + format
+      );
+    }
+
+    if (!condition) {
+      var argIndex = 0;
+      var message = 'Warning: ' +
+        format.replace(/%s/g, function() {
+          return args[argIndex++];
+        });
+      if (typeof console !== 'undefined') {
+        console.error(message);
+      }
+      try {
+        // This error was thrown as a convenience so that you can use this stack
+        // to find the callsite that caused this warning to fire.
+        throw new Error(message);
+      } catch(x) {}
+    }
+  };
+}
+
+module.exports = warning;
+
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0)))
+
+/***/ }),
+/* 240 */
 /***/ (function(module, exports) {
 
 module.exports = function(module) {
